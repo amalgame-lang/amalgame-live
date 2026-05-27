@@ -68,24 +68,32 @@ service:
 
 ### Live deployment (as shipped)
 
-- **URL:** http://demo.amalgame.me:8080  (`/` projector, `/join` phones)
+- **URL:** https://demo.amalgame.me  (`/` projector, `/join` phones)
 - **Host:** Debian 12, runs as the `amalgame-live` systemd service from
-  `/var/mosaic/demo` (enabled at boot, `Restart=on-failure`).
+  `/var/mosaic/demo` (enabled at boot, `Restart=on-failure`), listening on
+  plain HTTP `127.0.0.1:8080`.
+- **TLS / public URL:** the host's existing greenlock-express + Node server owns
+  ports 80/443 and auto-issues Let's Encrypt certs. `demo.amalgame.me` was added
+  to its `greenlock.d/config.json` sites list, and a one-line `req.hostname`
+  passthrough in its `app.js` reverse-proxies `demo.amalgame.me` → `127.0.0.1:8080`.
+  So the demo gets a real cert and a clean URL with no extra port and no Caddy.
 - **Runtime dep:** `libgc1` (Boehm GC) — `apt-get install -y libgc1`.
-- **Firewall:** the IONOS cloud firewall must allow the chosen port(s);
-  8080 is open. Ports 80/443 are taken by another service on this host.
-- **QR:** generated server-side with `qrencode` into `public/qr.png` for the
-  current join URL — no external service, no mixed content.
+- **Firewall:** the IONOS cloud firewall only opens 80/443/55 by default
+  (8080/8443 were opened too, but the public path is 443 via the proxy).
+- **QR:** generated server-side with `qrencode` into `public/qr.png` for
+  `https://demo.amalgame.me/join` — no external service, no mixed content.
 - **Reset key:** `RESET_KEY` is set via a systemd drop-in
   (`/etc/systemd/system/amalgame-live.service.d/override.conf`), so `/api/reset`
   needs `{"key":"…"}`.
 
-### HTTPS
+### HTTPS — note
 
-Not enabled. Standard Let's Encrypt (HTTP-01/TLS-ALPN) can't be used because
-ports 80/443 are occupied by another service. Options: a DNS-01 cert on a TLS
-listener at `:8443`, or fronting the app with the host's existing reverse proxy
-on `:443`. Plain HTTP on `:8080` is what the demo ships with.
+The Amalgame web stack can't terminate TLS itself yet in a way the Mosaic router
+can use (`amalgame-net-http` v0.9.6's `Https.Serve` is HTTP/2-only and not wired
+to the HTTP/1.1 `WebApp` handler). Standard Let's Encrypt (HTTP-01/TLS-ALPN) was
+also blocked here because 80/443 are held by the host's Node server. The pragmatic
+fix was to front the app with that existing reverse proxy. Native TLS termination
+in `amalgame-web` is the proper long-term fix.
 
 ## Build notes
 
