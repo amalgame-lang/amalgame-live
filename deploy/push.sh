@@ -14,8 +14,8 @@ TARGET="${1:-root@212.227.28.96}"
 DEST="/var/mosaic/demo"
 cd "$(dirname "$0")/.."
 
-echo "→ building"
-./build.sh >/dev/null
+echo "→ building (mosaic build)"
+mosaic build >/dev/null
 echo "→ pushing to $TARGET:$DEST"
 ssh "$TARGET" "mkdir -p $DEST"
 scp server "$TARGET:$DEST/server"
@@ -26,4 +26,4 @@ echo "→ (re)starting service"
 ssh "$TARGET" "systemctl daemon-reload && systemctl enable --now amalgame-live && systemctl restart amalgame-live && sleep 1 && systemctl --no-pager status amalgame-live | head -6 && curl -s localhost:8080/api/state | head -c 120"
 
 echo
-echo "✓ app is up on :8080. Configure Caddy for TLS :8443 — see deploy/DEPLOY.md."
+echo "✓ app is up on :8080 — public via the host reverse proxy at https://demo.amalgame.me"

@@ -13,12 +13,15 @@ runtime assets:
 
 ```bash
 # in the dev VM, from the repo root
-./build.sh
+mosaic build
 
 # copy the binary + everything it serves
 scp server                 root@212.227.28.96:/var/mosaic/demo/
 scp -r public              root@212.227.28.96:/var/mosaic/demo/
 ```
+
+(Or just run `./deploy/push.sh <ssh-target>`, which does the `mosaic build` +
+copy + service restart in one shot.)
 
 On the server, install the shared libs if missing:
 

@@ -1,7 +1,8 @@
 # Amalgame Live
 
-A real-time audience-participation board, written in **Amalgame** and served by
-the pure-Amalgame **Mosaic** web stack — compiled to a single native binary.
+A real-time audience-participation board, written in **Amalgame** and built with
+**Mosaic** — the CLI/build tool for the pure-Amalgame web stack. Compiled to a
+single native binary.
 
 The room scans a QR code, votes on a poll and fires emoji/messages from their
 phones; the big screen updates live.
@@ -27,8 +28,7 @@ phones; the big screen updates live.
 
 | Path | What |
 |------|------|
-| `server.am` | entry point — reads `$PORT`, builds the `WebApp`, serves |
-| `lib/store.am` | the data model (`LiveState`, `PollOption`, `Reaction`) + a tiny file-backed JSON store |
+| `server.am` | entry point — builds the `WebApp` + the data model (`LiveState`, `PollOption`, `Reaction`) and a tiny file-backed JSON `Store` |
 | `app/index.am` | `GET /` — the projector view |
 | `app/join.am` | `GET /join` — the phone view |
 | `app/api/state.am` | `GET /api/state` — the whole board as JSON (polled once a second) |
@@ -37,16 +37,27 @@ phones; the big screen updates live.
 | `app/api/reset.am` | `POST /api/reset` — presenter wipe (gated by `RESET_KEY`) |
 | `public/` | `style.css` + `app.js` (vanilla, zero deps) — auto-served at `/` |
 
-Routing is filesystem-based: `tools/mosaic-routes.sh` scans `app/` and generates
-`_routes.am` at build time (Next.js style — `app/api/vote.am` → `POST /api/vote`).
+Routing is filesystem-based: Mosaic scans `app/` and generates `_routes.am` at
+build time (Next.js style — `app/api/vote.am` → `POST /api/vote`), and
+auto-serves `public/` at `/`.
 
-## Run it locally
+## Run it locally — with Mosaic
+
+First clone only: install the locked deps into the amc package cache, then build.
 
 ```bash
-./run.sh
+./tools/install-deps.sh        # once, populates ~/.amalgame/packages from amalgame.lock
+
+mosaic dev                     # watch + rebuild + livereload on save
 # ▶ http://localhost:8080/       projector
 # ▶ http://localhost:8080/join   phone
+
+# or a one-shot production build:
+mosaic build && ./server
 ```
+
+Needs the Mosaic CLI (`mosaic`) ≥ v0.6 on PATH — see
+https://github.com/amalgame-lang/mosaic.
 
 ## Configuration (env vars)
 
@@ -97,7 +108,9 @@ in `amalgame-web` is the proper long-term fix.
 
 ## Build notes
 
-`build.sh` reuses a vendored, prebuilt `amalgame-web` archive
-(`vendor/libamalgame-pkg-Router.a`) because amc 0.8.55's `--lib` resolver can't
-yet rebuild that multi-source package from source. Set `FORCE_REBUILD_WEB=1`
-once that's fixed. Everything else links straight from the package cache.
+Built with **Mosaic** (`mosaic build` / `mosaic dev`) ≥ v0.6 — it regenerates
+`_routes.am` from `app/`, drives `amc` + `gcc`, and links the package archives
+from the amc cache (resolved via `amalgame.lock`). The data model lives in
+`server.am` (not a separate file) so it's compiled together with the generated
+routes. Needs the dependencies present in the cache first — run
+`./tools/install-deps.sh` on a fresh clone.
