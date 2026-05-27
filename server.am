@@ -1,0 +1,39 @@
+// amalgame-live — Mosaic entry point.
+//
+// A live audience-participation board: a poll the room votes on and a
+// wall of emoji/text reactions, all updating in real time. Written in
+// Amalgame, served by the pure-Amalgame web stack (router + JSON +
+// static), compiled to a native binary.
+//
+// Plain HTTP on $PORT (default 8080). TLS is terminated by Caddy in
+// front of it (see deploy/Caddyfile) — the app stays single-threaded
+// and dead simple.
+
+namespace App
+
+import Amalgame.Collections
+import Amalgame.Web
+import Amalgame.Net.Http
+
+public class Program {
+    public static int Main(string[] args) {
+        var port: int = 8080
+        let portEnv: string = Env_Get("PORT")
+        if (String_Length(portEnv) > 0) {
+            let p: int = String_ToInt(portEnv)
+            if (p > 0) { port = p }
+        }
+
+        let app: WebApp = WebApp.New()
+        Routes.Bind(app)
+
+        Console.WriteLine("amalgame-live — listening on http://0.0.0.0:" + String_FromInt(port))
+        Console.WriteLine("  projector : /        (the big screen)")
+        Console.WriteLine("  join      : /join    (phones)")
+        Console.WriteLine("  state     : /api/state")
+        Console.WriteLine("  store     : " + Store.Path())
+        Console.Flush()
+
+        return app.Serve(port)
+    }
+}

@@ -1,0 +1,34 @@
+// app/api/vote.am  →  POST /api/vote   body: {"i": <option index>}
+//
+// Increments one option's tally and returns the new board.
+
+import Amalgame.Web
+import Amalgame.Formats.Json
+
+public class Page {
+    public static HttpResponse POST(ctx: WebContext) {
+        let parser = new JsonParser(ctx.Body)
+        let root: JsonValue = parser.ParseTopLevel()
+        if (parser.HasFailed() || !root.IsObject()) {
+            return HttpResponse.New().Status(400)
+                .Header("content-type", "application/json")
+                .Text("{\"error\":\"bad JSON\"}")
+        }
+
+        let idx: int = root.Get("i").AsInt()
+        let s: LiveState = Store.Load()
+        if (idx < 0 || idx >= s.Options.Count()) {
+            return HttpResponse.New().Status(400)
+                .Header("content-type", "application/json")
+                .Text("{\"error\":\"bad option index\"}")
+        }
+
+        let opt: PollOption = s.Options.Get(idx)
+        opt.Votes = opt.Votes + 1
+        Store.Save(s)
+
+        return HttpResponse.New()
+            .Header("content-type", "application/json")
+            .Text(Store.ToJson(s))
+    }
+}

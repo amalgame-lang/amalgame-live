@@ -1,0 +1,19 @@
+[Unit]
+Description=Amalgame Live — real-time audience demo
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/var/mosaic/demo
+# The app serves ./public relative to WorkingDirectory, so this must
+# point at the deploy dir.
+Environment=PORT=8080
+Environment=STATE_FILE=/var/mosaic/demo/state.json
+# Set a secret so only the presenter can clear the board:
+#   Environment=RESET_KEY=change-me
+ExecStart=/var/mosaic/demo/server
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+// app/api/state.am  →  GET /api/state  (JSON)
+//
+// The whole live board as JSON. The projector and the phones both
+// poll this once a second.
+
+import Amalgame.Web
+
+public class Page {
+    public static HttpResponse GET(ctx: WebContext) {
+        return HttpResponse.New()
+            .Header("content-type", "application/json")
+            .Text(Store.ToJson(Store.Load()))
+    }
+}

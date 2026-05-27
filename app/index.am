@@ -1,0 +1,40 @@
+// app/index.am  →  GET /
+//
+// The projector view. Big title, a live poll with animated bars, the
+// rolling wall of reactions from the room, and a join panel (short
+// URL + QR). All the live data is fetched by /app.js from /api/state.
+
+import Amalgame.Web
+
+public class Page {
+    public static HttpResponse GET(ctx: WebContext) {
+        let html: string = "<!doctype html><html lang=\"fr\"><head>"
+            + "<meta charset=\"utf-8\">"
+            + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+            + "<title>Amalgame · Live</title>"
+            + "<link rel=\"stylesheet\" href=\"/style.css\">"
+            + "</head><body class=\"projector\">"
+            + "<header class=\"top\">"
+            + "<div class=\"brand\"><span class=\"logo\">◆</span> Amalgame <span class=\"live-dot\">● LIVE</span></div>"
+            + "<div class=\"join\">"
+            + "<div class=\"join-text\">Participez : <strong id=\"joinurl\">…/join</strong></div>"
+            + "<img id=\"qr\" class=\"qr\" alt=\"QR rejoindre\">"
+            + "</div>"
+            + "</header>"
+            + "<main class=\"board\">"
+            + "<section class=\"poll-pane\">"
+            + "<h1 id=\"question\">…</h1>"
+            + "<div id=\"poll\" class=\"poll\"></div>"
+            + "<div class=\"hint\">Un site web servi par le stack web 100% Amalgame · routeur, JSON, statique, le tout compilé en C natif</div>"
+            + "</section>"
+            + "<section class=\"wall-pane\">"
+            + "<h2>Le mur de la salle</h2>"
+            + "<div id=\"wall\" class=\"wall\"></div>"
+            + "</section>"
+            + "</main>"
+            + "<script src=\"/app.js\"></script>"
+            + "<script>Amalgame.projector();</script>"
+            + "</body></html>"
+        return HttpResponse.New().Html(html)
+    }
+}

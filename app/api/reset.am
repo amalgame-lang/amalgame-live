@@ -1,0 +1,29 @@
+// app/api/reset.am  →  POST /api/reset   body: {"key": "..."}
+//
+// Presenter control: wipe votes + reactions back to a fresh board.
+// Gated by the RESET_KEY env var when it is set (so a random
+// attendee can't clear the room mid-talk). If RESET_KEY is empty
+// the endpoint is open — fine for local rehearsal.
+
+import Amalgame.Web
+import Amalgame.Formats.Json
+
+public class Page {
+    public static HttpResponse POST(ctx: WebContext) {
+        let want: string = Env_Get("RESET_KEY")
+        if (String_Length(want) > 0) {
+            let parser = new JsonParser(ctx.Body)
+            let root: JsonValue = parser.ParseTopLevel()
+            let got: string = root.Get("key").AsString()
+            if (got != want) {
+                return HttpResponse.New().Status(403)
+                    .Header("content-type", "application/json")
+                    .Text("{\"error\":\"forbidden\"}")
+            }
+        }
+        Store.Save(Store.Default())
+        return HttpResponse.New()
+            .Header("content-type", "application/json")
+            .Text("{\"ok\":true}")
+    }
+}

@@ -1,0 +1,42 @@
+// app/join.am  →  GET /join
+//
+// The phone view. Vote on the poll, fire an emoji, send a short
+// message. /app.js wires the buttons to /api/vote and /api/react.
+
+import Amalgame.Web
+
+public class Page {
+    public static HttpResponse GET(ctx: WebContext) {
+        let html: string = "<!doctype html><html lang=\"fr\"><head>"
+            + "<meta charset=\"utf-8\">"
+            + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+            + "<title>Amalgame · Rejoindre</title>"
+            + "<link rel=\"stylesheet\" href=\"/style.css\">"
+            + "</head><body class=\"phone\">"
+            + "<header class=\"phone-top\"><span class=\"logo\">◆</span> Amalgame <span class=\"live-dot\">● LIVE</span></header>"
+            + "<main class=\"phone-main\">"
+            + "<h1 id=\"question\">…</h1>"
+            + "<div id=\"options\" class=\"options\"></div>"
+            + "<div class=\"react-block\">"
+            + "<div class=\"react-title\">Envoyez une réaction</div>"
+            + "<div class=\"emoji-row\">"
+            + "<button class=\"emoji\" data-emoji=\"🔥\">🔥</button>"
+            + "<button class=\"emoji\" data-emoji=\"❤️\">❤️</button>"
+            + "<button class=\"emoji\" data-emoji=\"👏\">👏</button>"
+            + "<button class=\"emoji\" data-emoji=\"🚀\">🚀</button>"
+            + "<button class=\"emoji\" data-emoji=\"🤯\">🤯</button>"
+            + "<button class=\"emoji\" data-emoji=\"🤔\">🤔</button>"
+            + "</div>"
+            + "<form id=\"msgform\" class=\"msgform\">"
+            + "<input id=\"msg\" maxlength=\"80\" placeholder=\"un petit mot… (optionnel)\" autocomplete=\"off\">"
+            + "<button type=\"submit\">Envoyer</button>"
+            + "</form>"
+            + "</div>"
+            + "<div id=\"toast\" class=\"toast\"></div>"
+            + "</main>"
+            + "<script src=\"/app.js\"></script>"
+            + "<script>Amalgame.phone();</script>"
+            + "</body></html>"
+        return HttpResponse.New().Html(html)
+    }
+}

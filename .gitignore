@@ -1,0 +1,12 @@
+# Build artifacts
+/build/
+/server
+/server.c
+/_routes.am
+*.o
+
+# Runtime state
+/state.json
+/*.json.bak
+
+# Keep: vendor/ (prebuilt amalgame-web archive) and amalgame.lock

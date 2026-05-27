@@ -1,0 +1,50 @@
+// app/api/react.am  →  POST /api/react   body: {"emoji": "🔥", "text": "..."}
+//
+// Appends one reaction to the rolling wall (oldest dropped past the
+// cap). Text is length-limited here; HTML safety is handled on the
+// client, which renders every reaction via textContent (never
+// innerHTML), so nothing the room types can execute on the projector.
+
+import Amalgame.Web
+import Amalgame.Formats.Json
+
+public class Page {
+    public static HttpResponse POST(ctx: WebContext) {
+        let parser = new JsonParser(ctx.Body)
+        let root: JsonValue = parser.ParseTopLevel()
+        if (parser.HasFailed() || !root.IsObject()) {
+            return HttpResponse.New().Status(400)
+                .Header("content-type", "application/json")
+                .Text("{\"error\":\"bad JSON\"}")
+        }
+
+        var emoji: string = root.Get("emoji").AsString()
+        var text:  string = root.Get("text").AsString()
+
+        // Clamp lengths so one phone can't bloat the file or the wall.
+        if (String_Length(emoji) > 8)  { emoji = String_Substring(emoji, 0, 8) }
+        if (String_Length(text)  > 80) { text  = String_Substring(text, 0, 80) }
+        if (String_Length(emoji) == 0 && String_Length(text) == 0) {
+            return HttpResponse.New().Status(400)
+                .Header("content-type", "application/json")
+                .Text("{\"error\":\"empty reaction\"}")
+        }
+
+        let s: LiveState = Store.Load()
+        s.Messages.Add(new Reaction(emoji, text))
+
+        // Trim from the front when we're over the cap.
+        let over: int = s.Messages.Count() - Store.MaxMessages()
+        if (over > 0) {
+            let kept = new List<Reaction>()
+            let n: int = s.Messages.Count()
+            for i in over..n { kept.Add(s.Messages.Get(i)) }
+            s.Messages = kept
+        }
+        Store.Save(s)
+
+        return HttpResponse.New()
+            .Header("content-type", "application/json")
+            .Text("{\"ok\":true}")
+    }
+}
