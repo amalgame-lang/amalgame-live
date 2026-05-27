@@ -58,9 +58,34 @@ Routing is filesystem-based: `tools/mosaic-routes.sh` scans `app/` and generates
 
 ## Deploy
 
-See [deploy/DEPLOY.md](deploy/DEPLOY.md) — plain HTTP on `:8080` behind Caddy,
-which terminates TLS on `:8443` with an automatic Let's Encrypt certificate for
-`demo.amalgame.me`.
+See [deploy/DEPLOY.md](deploy/DEPLOY.md) for the general recipe. The push script
+builds, copies the binary + `public/` to the server, and (re)starts the systemd
+service:
+
+```bash
+./deploy/push.sh neitsab@sites.neitsab.fr   # add `-p 55` via ~/.ssh/config
+```
+
+### Live deployment (as shipped)
+
+- **URL:** http://demo.amalgame.me:8080  (`/` projector, `/join` phones)
+- **Host:** Debian 12, runs as the `amalgame-live` systemd service from
+  `/var/mosaic/demo` (enabled at boot, `Restart=on-failure`).
+- **Runtime dep:** `libgc1` (Boehm GC) — `apt-get install -y libgc1`.
+- **Firewall:** the IONOS cloud firewall must allow the chosen port(s);
+  8080 is open. Ports 80/443 are taken by another service on this host.
+- **QR:** generated server-side with `qrencode` into `public/qr.png` for the
+  current join URL — no external service, no mixed content.
+- **Reset key:** `RESET_KEY` is set via a systemd drop-in
+  (`/etc/systemd/system/amalgame-live.service.d/override.conf`), so `/api/reset`
+  needs `{"key":"…"}`.
+
+### HTTPS
+
+Not enabled. Standard Let's Encrypt (HTTP-01/TLS-ALPN) can't be used because
+ports 80/443 are occupied by another service. Options: a DNS-01 cert on a TLS
+listener at `:8443`, or fronting the app with the host's existing reverse proxy
+on `:443`. Plain HTTP on `:8080` is what the demo ships with.
 
 ## Build notes
 
