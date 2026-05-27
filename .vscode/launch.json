@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "amc",
+      "request": "launch",
+      "name": "Debug amalgame-live (F5)",
+      "program": "${workspaceFolder}/server",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PORT": "8080",
+        "STATE_FILE": "/tmp/amalgame-live-dev.json"
+      },
+      "stopOnEntry": false,
+      "preLaunchTask": "amalgame: debug build"
+    }
+  ]
+}

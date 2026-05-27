@@ -1,0 +1,13 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "amalgame: debug build",
+      "type": "shell",
+      "command": "./tools/debug-build.sh",
+      "group": { "kind": "build", "isDefault": true },
+      "presentation": { "reveal": "silent", "clear": true },
+      "problemMatcher": []
+    }
+  ]
+}
