@@ -41,7 +41,14 @@ public class Program {
         Console.WriteLine("  store     : " + Store.Path())
         Console.Flush()
 
-        return app.Serve(port)
+        // ServeWith + Default config (idle_timeout_sec=0) → HTTP/1.1
+        // keep-alive disabled, one request per connection. The single-
+        // threaded serial Serve had a head-of-line stall on long-lived
+        // keep-alive connections from the reverse proxy (backlog 64
+        // saturated after ~9h). Closing after each request makes the
+        // serial loop self-cleaning, no extra concurrency needed.
+        let cfg = HttpServerConfig.Default()
+        return app.ServeWith(port, cfg)
     }
 }
 
