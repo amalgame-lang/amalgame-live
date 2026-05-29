@@ -26,7 +26,7 @@ tag = "v0.2.3"
 
 [dependencies.http]
 git = "github.com/amalgame-lang/amalgame-net-http"
-tag = "v0.11.0"
+tag = "v0.11.1"
 
 [dependencies.datetime]
 git = "github.com/amalgame-lang/amalgame-datetime"
@@ -50,4 +50,4 @@ tag = "v0.1.0"
 
 [dependencies.web]
 git = "github.com/amalgame-lang/amalgame-web"
-tag = "v0.17.0"
+tag = "v0.17.1"
