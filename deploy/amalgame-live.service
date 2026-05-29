@@ -7,8 +7,17 @@ Type=simple
 WorkingDirectory=/var/mosaic/demo
 # The app serves ./public relative to WorkingDirectory, so this must
 # point at the deploy dir.
-Environment=PORT=8080
+Environment=PORT=8443
 Environment=STATE_FILE=/var/mosaic/demo/state.json
+# Native TLS termination via amalgame-web/Mosaic ServeHttps (v0.14+).
+# Cert provisioned + renewed by /usr/local/bin/acme-renew (cron at
+# /etc/cron.d/letsencrypt-amalgame). Service runs as root so the
+# 0600 privkey.pem is readable.
+Environment=TLS_CERT=/etc/amalgame-tls/demo.amalgame.me/fullchain.pem
+Environment=TLS_KEY=/etc/amalgame-tls/demo.amalgame.me/privkey.pem
+# Plain-HTTP listener that 301-redirects to the HTTPS port. Mirrors
+# the standard "any normal site" pattern. Disable by unsetting.
+Environment=REDIRECT_PORT=8080
 # Set a secret so only the presenter can clear the board:
 #   Environment=RESET_KEY=change-me
 ExecStart=/var/mosaic/demo/server

@@ -1,3 +1,4 @@
+
 [package]
 name = "amalgame-live"
 version = "0.1.0"
@@ -6,9 +7,9 @@ description = "Amalgame Live — a real-time audience-participation board (poll 
 entry = "server.am"
 
 [dependencies]
-amalgame-web = ">=0.13.0"
-amalgame-net-http = ">=0.9.6"
-amalgame-tls = ">=0.3.1"
+amalgame-web = ">=0.14.0"
+amalgame-net-http = ">=0.11.1"
+amalgame-tls = ">=0.3.2"
 amalgame-crypto = ">=0.3.0"
 
 [dependencies.crypto]
@@ -17,7 +18,7 @@ tag = "v0.3.0"
 
 [dependencies.tls]
 git = "github.com/amalgame-lang/amalgame-tls"
-tag = "v0.3.1"
+tag = "v0.3.2"
 
 [dependencies.async]
 git = "github.com/amalgame-lang/amalgame-async"
@@ -25,7 +26,7 @@ tag = "v0.2.3"
 
 [dependencies.http]
 git = "github.com/amalgame-lang/amalgame-net-http"
-tag = "v0.9.6"
+tag = "v0.11.0"
 
 [dependencies.datetime]
 git = "github.com/amalgame-lang/amalgame-datetime"
@@ -49,4 +50,4 @@ tag = "v0.1.0"
 
 [dependencies.web]
 git = "github.com/amalgame-lang/amalgame-web"
-tag = "v0.13.3"
+tag = "v0.17.0"

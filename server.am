@@ -21,6 +21,7 @@ import Amalgame.Collections
 import Amalgame.Web
 import Amalgame.Net.Http
 import Amalgame.Formats.Json
+import Amalgame.Threading
 
 public class Program {
     public static int Main(string[] args) {
@@ -31,22 +32,87 @@ public class Program {
             if (p > 0) { port = p }
         }
 
+        // Optional native TLS termination (no nginx/Caddy in front).
+        // Set both TLS_CERT and TLS_KEY (PEM file paths) and the app
+        // switches to HTTPS on $port. Default port jumps to 8443 if
+        // PORT is not explicitly set and TLS is active.
+        let certPath: string = Env_Get("TLS_CERT")
+        let keyPath:  string = Env_Get("TLS_KEY")
+        let tlsActive: bool  = String_Length(certPath) > 0 && String_Length(keyPath) > 0
+        if (tlsActive && String_Length(portEnv) == 0) {
+            port = 8443
+        }
+
         let app: WebApp = WebApp.New()
         Routes.Bind(app)
 
-        Console.WriteLine("amalgame-live — listening on http://0.0.0.0:" + String_FromInt(port))
+        var scheme: string = "http"
+        if (tlsActive) { scheme = "https" }
+        Console.WriteLine("amalgame-live — listening on " + scheme + "://0.0.0.0:" + String_FromInt(port))
         Console.WriteLine("  projector : /        (the big screen)")
         Console.WriteLine("  join      : /join    (phones)")
         Console.WriteLine("  state     : /api/state")
         Console.WriteLine("  store     : " + Store.Path())
+        if (tlsActive) {
+            Console.WriteLine("  cert      : " + certPath)
+            Console.WriteLine("  key       : " + keyPath)
+        }
         Console.Flush()
 
-        // ServeWith + Default config (idle_timeout_sec=0) → HTTP/1.1
-        // keep-alive disabled, one request per connection. The single-
-        // threaded serial Serve had a head-of-line stall on long-lived
-        // keep-alive connections from the reverse proxy (backlog 64
-        // saturated after ~9h). Closing after each request makes the
-        // serial loop self-cleaning, no extra concurrency needed.
+        if (tlsActive) {
+            // Optional HTTP → HTTPS redirector on a separate port.
+            // Set REDIRECT_PORT (e.g. 8080) and a background thread
+            // spawns a tiny plain-HTTP listener that emits 301s to
+            // the HTTPS URL — same shape any "normal" site has.
+            let redirEnv: string = Env_Get("REDIRECT_PORT")
+            if (String_Length(redirEnv) > 0) {
+                let redirPort: int = String_ToInt(redirEnv)
+                if (redirPort > 0) {
+                    let httpsPort: int = port
+                    let handler = conn => {
+                        let req: HttpRequest = HttpRequest.FromH1Conn(conn)
+                        let hostHdr: string = req.Header("Host")
+                        var host: string = hostHdr
+                        let colon: int = String_IndexOf(hostHdr, ":")
+                        if (colon >= 0) {
+                            host = String_Substring(hostHdr, 0, colon)
+                        }
+                        if (String_Length(host) == 0) { host = "demo.amalgame.me" }
+                        let target: string = "https://" + host + ":" + String_FromInt(httpsPort) + req.RawTarget
+                        // 308 = permanent + preserve method (POST stays
+                        // POST). Requires net-http v0.11.1+ — earlier
+                        // versions silently dropped the Location header
+                        // because WriteToH1Conn only emitted Content-Type.
+                        HttpResponse.New()
+                            .Redirect(target, true)
+                            .WriteToH1Conn(conn)
+                        return 0
+                    }
+                    let redirector = (arg: int) => {
+                        let cfg = HttpServerConfig.Default()
+                        Http1.ServeWith(redirPort, cfg, handler)
+                        return 0
+                    }
+                    Threading.ThreadSpawn(redirector, 0)
+                    Console.WriteLine("  redirect  : http://0.0.0.0:" + String_FromInt(redirPort) + " → https://*:" + String_FromInt(httpsPort))
+                    Console.Flush()
+                }
+            }
+
+            // Native TLS via amalgame-web v0.14+ / amalgame-tls. No
+            // keep-alive tuning available on the HTTPS path today; the
+            // systemd watchdog (amalgame-live-watchdog.timer) catches
+            // any long-running stall by restarting the service.
+            return app.ServeHttps(port, certPath, keyPath)
+        }
+
+        // Plain HTTP behind a reverse proxy. ServeWith + Default
+        // config (idle_timeout_sec=0) → keep-alive disabled, one
+        // request per connection. The single-threaded serial Serve
+        // had a head-of-line stall on long-lived keep-alive
+        // connections from the proxy (backlog 64 saturated after
+        // ~9h). Closing after each request makes the serial loop
+        // self-cleaning, no extra concurrency needed.
         let cfg = HttpServerConfig.Default()
         return app.ServeWith(port, cfg)
     }
