@@ -60,6 +60,74 @@ public class Program {
         Console.Flush()
 
         if (tlsActive) {
+            // Optional embedded auto-renewal — when ACME_DOMAIN +
+            // ACME_EMAIL + ACME_DIR are set, the app self-provisions
+            // and self-renews the cert at TLS_CERT via the
+            // amalgame-tls v0.3.3 helpers. Same flow as a separate
+            // acme-renew CLI + cron, just rolled into the binary so
+            // a deploy doesn't need a system cron entry.
+            //
+            // Renewal needs port 80 free for the http-01 challenge.
+            // On hosts where another service holds port 80 (a node
+            // greenlock proxy, nginx, …) EnsureCert returns -3 and
+            // we log + continue with the existing cert. The renewal
+            // thread retries every 24h; once port 80 frees up the
+            // next attempt succeeds without restarting the app.
+            let acmeDomain: string = Env_Get("ACME_DOMAIN")
+            let acmeEmail:  string = Env_Get("ACME_EMAIL")
+            let acmeDir:    string = Env_Get("ACME_DIR")
+            let autoRenew: bool = String_Length(acmeDomain) > 0
+                && String_Length(acmeEmail) > 0
+                && String_Length(acmeDir) > 0
+            if (autoRenew) {
+                var thresholdDays: int = 30
+                let threshEnv: string = Env_Get("ACME_RENEW_DAYS")
+                if (String_Length(threshEnv) > 0) {
+                    let td: int = String_ToInt(threshEnv)
+                    if (td > 0) { thresholdDays = td }
+                }
+                let daysLeft: int = AcmeNative.CertDaysRemaining(certPath)
+                Console.WriteLine("  cert valid: " + String_FromInt(daysLeft) + " days (threshold=" + String_FromInt(thresholdDays) + ")")
+                Console.WriteLine("  auto-renew: " + acmeDomain + " <" + acmeEmail + "> → " + acmeDir)
+                Console.Flush()
+
+                // Startup attempt — only if cert actually needs renewal.
+                // We don't gate startup on success: EnsureCert prints
+                // its own diagnostic on failure and we proceed to serve.
+                if (AcmeNative.NeedsRenewal(certPath, thresholdDays)) {
+                    Console.WriteLine("  cert needs renewal — attempting EnsureCert at startup")
+                    Console.Flush()
+                    let rc: int = AcmeNative.EnsureCert(acmeDomain, acmeEmail, acmeDir, "")
+                    if (rc != 0) {
+                        Console.WriteError("  EnsureCert failed (rc=" + String_FromInt(rc) + ") — continuing with existing cert")
+                    } else {
+                        Console.WriteLine("  EnsureCert OK — serving the renewed cert")
+                    }
+                    Console.Flush()
+                }
+
+                // Background renewal thread — polls every 24h.
+                let renewer = (arg: int) => {
+                    while (true) {
+                        Threading.ThreadSleep(86400000)  // 24h in ms
+                        if (AcmeNative.NeedsRenewal(certPath, thresholdDays)) {
+                            Console.WriteLine("auto-renew: cert needs renewal, calling EnsureCert")
+                            Console.Flush()
+                            let rcr: int = AcmeNative.EnsureCert(acmeDomain, acmeEmail, acmeDir, "")
+                            if (rcr != 0) {
+                                Console.WriteError("auto-renew: EnsureCert failed (rc=" + String_FromInt(rcr) + ") — will retry in 24h")
+                            } else {
+                                Console.WriteLine("auto-renew: cert renewed OK")
+                                Console.WriteError("auto-renew: NOTE the running TLS context still holds the OLD cert; restart the service to load the new one")
+                            }
+                            Console.Flush()
+                        }
+                    }
+                    return 0
+                }
+                Threading.ThreadSpawn(renewer, 0)
+            }
+
             // Optional HTTP → HTTPS redirector on a separate port.
             // Set REDIRECT_PORT (e.g. 8080) and a background thread
             // spawns a tiny plain-HTTP listener that emits 301s to

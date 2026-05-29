@@ -18,6 +18,19 @@ Environment=TLS_KEY=/etc/amalgame-tls/demo.amalgame.me/privkey.pem
 # Plain-HTTP listener that 301-redirects to the HTTPS port. Mirrors
 # the standard "any normal site" pattern. Disable by unsetting.
 Environment=REDIRECT_PORT=8080
+# Embedded auto-renewal via amalgame-tls v0.3.3 helpers. The app
+# checks the cert at startup + every 24h via a background thread,
+# and calls AcmeNative.EnsureCert when notAfter is within
+# ACME_RENEW_DAYS (default 30) of now. On this host the http-01
+# challenge currently fails because pm2 holds port 80 — the app
+# logs the rc=-3 + continues serving with the existing cert.
+# Migrate the other sites off node + free port 80 to make the
+# auto-renew loop succeed; the cmd/acme-renew CLI + cron entry
+# that v0.3.2 used became redundant once the helpers shipped.
+Environment=ACME_DOMAIN=demo.amalgame.me
+Environment=ACME_EMAIL=bmtbf@hotmail.fr
+Environment=ACME_DIR=/etc/amalgame-tls
+Environment=ACME_RENEW_DAYS=30
 # Set a secret so only the presenter can clear the board:
 #   Environment=RESET_KEY=change-me
 ExecStart=/var/mosaic/demo/server

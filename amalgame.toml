@@ -9,7 +9,7 @@ entry = "server.am"
 [dependencies]
 amalgame-web = ">=0.14.0"
 amalgame-net-http = ">=0.11.1"
-amalgame-tls = ">=0.3.2"
+amalgame-tls = ">=0.3.3"
 amalgame-crypto = ">=0.3.0"
 
 [dependencies.crypto]
@@ -18,7 +18,7 @@ tag = "v0.3.0"
 
 [dependencies.tls]
 git = "github.com/amalgame-lang/amalgame-tls"
-tag = "v0.3.2"
+tag = "v0.3.3"
 
 [dependencies.async]
 git = "github.com/amalgame-lang/amalgame-async"
